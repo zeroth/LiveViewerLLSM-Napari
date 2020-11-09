@@ -55,12 +55,11 @@ with napari.gui_qt():
 
 
     @magicgui ( dx= {"decimals":4 }, dy= {"decimals":4 }, dz= {"decimals":4 },
-                angle= {"decimals":4 }, layout="form", monitor_dir={"mode":"D"},
-                # running = { "disabled": True },
+                angle= {"decimals":4}, monitor_dir={"mode":"D"}, layout="form",
                 call_button="Start/Update" )
     def deskew_settings(angle: float = 31.8, dx: float = 0.104, 
                         dy: float = 0.104, dz: float= 0.4, 
-                        time_point_divider: str = "T_", 
+                        delay_between_frames: int = 10, 
                         channel_divider: str = "488nm, 560nm", monitor_dir=Path("~"),
                         # running: bool = False
                         ):
@@ -84,7 +83,7 @@ with napari.gui_qt():
         global_affine =shear @ scale
         channel_divider_list = [ i.strip() for i in channel_divider.split(",")]
         return {"monitor_dir": monitor_dir, "affine": global_affine, 
-                "time_point_divider": time_point_divider, 
+                "delay_between_frames": delay_between_frames, 
                 "channel_divider": channel_divider_list }
     
     deskew_settings_widget = deskew_settings.Gui()

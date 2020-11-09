@@ -29,11 +29,10 @@ def watch_dir(kwargs={}):
     print(kwargs)
     path = kwargs.get("monitor_dir", "~")
     affine_mat = kwargs.get("affine", None)
-    time_point_divider = kwargs.get("time_point_divider", "_T")
     channel_divider = kwargs.get("channel_divider", ["488nm", "560nm"])
+    flush_delay = int(kwargs.get("delay_between_frames", 10))
     processed_files = {}
     flush_timer = None
-    flush_delay = 10
     last_file = {}
     while True:
         files_to_process = {}
