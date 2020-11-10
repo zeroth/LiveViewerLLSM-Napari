@@ -22,10 +22,10 @@ with napari.gui_qt():
     
     channel_layers = {}
 
-    def func(p, im_data, block_info=None):
-        image = imread(p)
+    def dask_map_func(fname, current_data, block_info=None):
+        image = imread(fname)
         image = image.reshape((1,) + image.shape)
-        r = da.concatenate((im_data, image), axis=0)
+        r = da.concatenate((current_data, image), axis=0)
         return r
 
     def append(data):
@@ -37,49 +37,37 @@ with napari.gui_qt():
 
         if delayed_image is None:
             return
+        
         total_frames = total_frames + 1
+
         if (channel in channel_layers) and viewer.layers:
-            
             # layer is present, append to its data
             layer = channel_layers[channel]
-            # image_shape = layer.data.shape[1:]
+
             image_shape=layer.data.shape
             image_dtype = layer.data.dtype
-            ck = (total_frames, ) + image_shape[1:]
-            # print("ck ", ck)
-            # print("delayed_image", delayed_image)
-            # print("total_frames", total_frames)
+            chunk_size = (total_frames, ) + image_shape[1:]
+            
             layer.data = da.map_blocks(
-                func,
-                chunks=ck,
-                p = delayed_image,
-                im_data = layer.data,
-                arrayfunc = np.asanyarray,
+                dask_map_func,
+                chunks=chunk_size,
+                fname = delayed_image,
+                current_data = layer.data,
                 dtype=image_dtype,
                 # meta=np.asanyarray([])
             )
-            print("done", layer.data.shape)
-            # image = da.from_delayed(
-            #     delayed_image, shape=image_shape, dtype=image_dtype,
-            # ).reshape((1,) + image_shape)
-            # layer.data = da.concatenate((layer.data, image), axis=0)
-
+           
             layer.affine = affine_mat
         else:
             # first run, no layer added yet
-            # image = delayed_image.compute()
             image = imread(delayed_image)
             image = image.reshape((1,) + image.shape)
-            # image = da.from_delayed(
-            #     delayed_image, shape=image.shape, dtype=image.dtype,
-            # ).reshape((1,) + image.shape)
-            print("main image shape ", image.shape)
-
             channel_layers[channel] = viewer.add_image(image, affine=affine_mat, name=channel, rendering='attenuated_mip')
-            # layer = viewer.add_image(image, scale=scale, shear=shear, rendering='attenuated_mip')
+            
 
         if len(viewer.layers):
             viewer.dims.set_point(0, 0)
+
         # if viewer.dims.point[0] >= layer.data.shape[0] - 2:
         #     viewer.dims.set_point(0, layer.data.shape[0] - 1)
 
