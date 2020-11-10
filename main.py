@@ -12,38 +12,68 @@ from pathlib import Path
 # from SerialDirectoryWatcher import SerialDirectoryWatcher
 import logging
 logging.getLogger("tifffile").setLevel(logging.ERROR)
-
+from dask.array.core import normalize_chunks
 from SerialDirectoryWatcher import watch_dir
-worker = None
 
+worker = None
+total_frames = 0
 with napari.gui_qt():
     viewer = napari.Viewer(ndisplay=3)
     
     channel_layers = {}
+
+    def func(p, im_data, block_info=None):
+        image = imread(p)
+        image = image.reshape((1,) + image.shape)
+        r = da.concatenate((im_data, image), axis=0)
+        return r
+
     def append(data):
+        global total_frames
+        
         delayed_image = data.get("image", None)
         affine_mat = data.get("affine", None)
         channel = data.get("channel", None)
 
         if delayed_image is None:
             return
-
+        total_frames = total_frames + 1
         if (channel in channel_layers) and viewer.layers:
+            
             # layer is present, append to its data
             layer = channel_layers[channel]
-            image_shape = layer.data.shape[1:]
+            # image_shape = layer.data.shape[1:]
+            image_shape=layer.data.shape
             image_dtype = layer.data.dtype
-            image = da.from_delayed(
-                delayed_image, shape=image_shape, dtype=image_dtype,
-            ).reshape((1,) + image_shape)
-            layer.data = da.concatenate((layer.data, image), axis=0)
+            ck = (total_frames, ) + image_shape[1:]
+            # print("ck ", ck)
+            # print("delayed_image", delayed_image)
+            # print("total_frames", total_frames)
+            layer.data = da.map_blocks(
+                func,
+                chunks=ck,
+                p = delayed_image,
+                im_data = layer.data,
+                arrayfunc = np.asanyarray,
+                dtype=image_dtype,
+                # meta=np.asanyarray([])
+            )
+            print("done", layer.data.shape)
+            # image = da.from_delayed(
+            #     delayed_image, shape=image_shape, dtype=image_dtype,
+            # ).reshape((1,) + image_shape)
+            # layer.data = da.concatenate((layer.data, image), axis=0)
+
             layer.affine = affine_mat
         else:
             # first run, no layer added yet
-            image = delayed_image.compute()
-            image = da.from_delayed(
-                delayed_image, shape=image.shape, dtype=image.dtype,
-            ).reshape((1,) + image.shape)
+            # image = delayed_image.compute()
+            image = imread(delayed_image)
+            image = image.reshape((1,) + image.shape)
+            # image = da.from_delayed(
+            #     delayed_image, shape=image.shape, dtype=image.dtype,
+            # ).reshape((1,) + image.shape)
+            print("main image shape ", image.shape)
 
             channel_layers[channel] = viewer.add_image(image, affine=affine_mat, name=channel, rendering='attenuated_mip')
             # layer = viewer.add_image(image, scale=scale, shear=shear, rendering='attenuated_mip')

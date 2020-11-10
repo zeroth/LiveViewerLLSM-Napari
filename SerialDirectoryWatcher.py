@@ -62,7 +62,7 @@ def watch_dir(kwargs={}):
                             # reset the flush timer
                             flush_timer = None
                             yield {
-                                "image":delayed(imread)(os.path.join(path, last_file[channel])),
+                                "image": os.path.join(path, last_file[channel]), #delayed(imread)(os.path.join(path, last_file[channel])),
                                 "channel": channel,
                                 "affine": affine_mat
                             }
@@ -90,7 +90,7 @@ def watch_dir(kwargs={}):
                     flush_timer = time.perf_counter()
 
                     yield  {
-                        "image":delayed(imread)(os.path.join(path, p)),
+                        "image":os.path.join(path, p), #delayed(imread)(os.path.join(path, p)),
                         "channel": channel,
                         "affine": affine_mat
                     }
