@@ -12,13 +12,17 @@ from serial_directory_watcher import watch_dir
 
 # disable tifffile warnings
 import logging
+
 logging.getLogger("tifffile").setLevel(logging.ERROR)
 
-def get_affine(angle: float = 31.8,
-        dx: float = 0.104,
-        dy: float = 0.104,
-        dz: float = 0.4,
-        already_deskew: bool = False,):
+
+def get_affine(
+    angle: float = 31.8,
+    dx: float = 0.104,
+    dy: float = 0.104,
+    dz: float = 0.4,
+    already_deskew: bool = False,
+):
     dz_tan = np.tan(np.deg2rad(90 - angle))
     dz_sin = np.sin(np.deg2rad(angle)) * dz
     shear = np.eye(5)
@@ -44,6 +48,7 @@ def get_affine(angle: float = 31.8,
     )
 
     return shear @ scale
+
 
 def read_one_timepoint(fname_array, block_id):
     # block_id will be something like (t, 0, 0, 0)
@@ -126,7 +131,7 @@ with napari.gui_qt():
         angle={"decimals": 4},
         monitor_dir={"mode": "D"},
         layout="form",
-        call_button="Start/Update"
+        call_button="Start/Update",
     )
     def deskew_settings(
         angle: float = 31.8,
@@ -136,10 +141,12 @@ with napari.gui_qt():
         already_deskew: bool = False,
         delay_between_frames: int = 10,
         channel_divider: str = "488nm, 560nm",
-        monitor_dir=Path("~")
+        monitor_dir=Path("~"),
     ):
 
-        global_affine = get_affine(angle=angle, dx=dx, dy=dy, dz=dz, already_deskew=already_deskew)
+        global_affine = get_affine(
+            angle=angle, dx=dx, dy=dy, dz=dz, already_deskew=already_deskew
+        )
 
         channel_divider_list = [i.strip() for i in channel_divider.split(",")]
         return {
