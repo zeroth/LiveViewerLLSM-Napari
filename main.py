@@ -8,7 +8,7 @@ import dask.array as da
 from tifffile import imread
 from magicgui import magicgui
 from pathlib import Path
-from SerialDirectoryWatcher import watch_dir
+from serial_directory_watcher import watch_dir
 
 # disable tifffile warnings
 import logging
