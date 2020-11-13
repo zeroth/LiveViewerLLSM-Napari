@@ -83,46 +83,69 @@ with napari.gui_qt():
     channel_layers = {}
 
     def append(data):
-
-        all_filenames = np.asarray(data.get("image", []))
-        if len(all_filenames) == 0:
+        if not data:
             return
+
+        is_init = data.get("init", False)
+
+        if is_init:
+            init_data = data.get("data", {})
+            for channel, _data in init_data.items():
+                _files = _data.get('image', [])
+                _affine_mat = _data.get("affine", None)
+                _lut = _data.get("lut", "bop purple")
+
+                image0 = imread(_files[0])
+                image_dtype = image0.dtype
+                image_shape = image0.shape
+                image = delayed_multi_imread(np.asarray(_files), image_shape, image_dtype)
+
+                channel_layers[channel] = viewer.add_image(
+                    image,
+                    affine=_affine_mat,
+                    name=channel,
+                    rendering="mip",
+                    blending="additive",
+                    colormap=_lut,
+                )
+
+        delayed_image = data.get("image", None)
         affine_mat = data.get("affine", None)
         channel = data.get("channel", None)
         lut = data.get("lut", "bop purple")
 
-        if (channel in channel_layers) and viewer.layers:
-            # layer is present, append to its data
-            layer = channel_layers[channel]
+        
+        if delayed_image is None:
+            return
+        
 
-            if len(all_filenames) == layer.data.shape[0]:
-                return
+        if (channel in channel_layers) and viewer.layers:
+            layer = channel_layers[channel]
 
             image_shape = layer.data.shape[1:]
             image_dtype = layer.data.dtype
+            image = da.from_delayed(
+                delayed_image, shape=image_shape, dtype=image_dtype,
+            ).reshape((1,) + image_shape)
+            layer.data = da.concatenate((layer.data, image), axis=0)
 
-            layer.data = delayed_multi_imread(all_filenames, image_shape, image_dtype)
             layer.affine = affine_mat
         else:
             # first run, no layer added yet
-            image0 = imread(all_filenames[0])
-            image_dtype = image0.dtype
-            image_shape = image0.shape
-            image = delayed_multi_imread(all_filenames, image_shape, image_dtype)
-            channel_layers[channel] = viewer.add_image(
-                image,
-                affine=affine_mat,
-                name=channel,
-                rendering="mip",
-                blending="additive",
-                colormap=lut,
-            )
+            image = delayed_image.compute()
+            image = da.from_delayed(
+                delayed_image, shape=image.shape, dtype=image.dtype,
+            ).reshape((1,) + image.shape)
 
-        if len(viewer.layers):
-            viewer.dims.set_point(0, 0)
+            channel_layers[channel] = viewer.add_image(image, 
+                                                            name=channel,
+                                                            affine=affine_mat, 
+                                                            rendering="mip",
+                                                            blending="additive",
+                                                            colormap=lut)
 
-        # if viewer.dims.point[0] >= layer.data.shape[0] - 2:
-        #     viewer.dims.set_point(0, layer.data.shape[0] - 1)
+        if viewer.dims.point[0] >= channel_layers[channel].data.shape[0] - 2:
+            viewer.dims.set_point(0, channel_layers[channel].data.shape[0] - 1)
 
     @magicgui(
         dx={"decimals": 4},
