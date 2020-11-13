@@ -8,18 +8,17 @@ from dask import delayed
 import dask.array as da
 from tifffile import imread
 
+
 def sort_files_by_channels(files, channels):
     file_channels = {}
     for channel in channels:
-        _files = sorted(glob(os.path.join(files, "*{0}*".format(channel))), key=alphanumeric_key)
+        _files = sorted(
+            glob(os.path.join(files, "*{0}*".format(channel))), key=alphanumeric_key
+        )
         if len(_files):
             file_channels[channel] = _files
-
-    # for channel in channels:
-    #     for fileName in files:
-    #         if channel in fileName:
-    #             file_channels[channel].append(fileName)
     return file_channels
+
 
 def create_init_chunk(init_file_dict, lut_dict, affine_mat):
     init_chunk = {}
@@ -27,7 +26,7 @@ def create_init_chunk(init_file_dict, lut_dict, affine_mat):
         init_chunk[channel] = {
             "image": files,
             "affine": affine_mat,
-            "lut": lut_dict[channel]
+            "lut": lut_dict[channel],
         }
     return init_chunk
 
@@ -53,16 +52,15 @@ def watch_dir(kwargs={}):
             processed_files[channel] = set()
 
     initial_files = sort_files_by_channels(path, available_channels)
-    
+
     print()
     if initial_files:
         yield {
             "init": True,
-            "data": create_init_chunk(initial_files, channel_lut, affine_mat)
+            "data": create_init_chunk(initial_files, channel_lut, affine_mat),
         }
         for channel, files in initial_files.items():
             processed_files[channel].update(files)
-
 
     while True:
         files_to_process = {}
@@ -90,7 +88,6 @@ def watch_dir(kwargs={}):
                             }
                             processed_files[channel].update(set(last_file[channel]))
                             last_file[channel] = None
-
 
         if len(current_files):
             for channel in available_channels:

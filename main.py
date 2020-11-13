@@ -91,14 +91,16 @@ with napari.gui_qt():
         if is_init:
             init_data = data.get("data", {})
             for channel, _data in init_data.items():
-                _files = _data.get('image', [])
+                _files = _data.get("image", [])
                 _affine_mat = _data.get("affine", None)
                 _lut = _data.get("lut", "bop purple")
 
                 image0 = imread(_files[0])
                 image_dtype = image0.dtype
                 image_shape = image0.shape
-                image = delayed_multi_imread(np.asarray(_files), image_shape, image_dtype)
+                image = delayed_multi_imread(
+                    np.asarray(_files), image_shape, image_dtype
+                )
 
                 channel_layers[channel] = viewer.add_image(
                     image,
@@ -114,10 +116,8 @@ with napari.gui_qt():
         channel = data.get("channel", None)
         lut = data.get("lut", "bop purple")
 
-        
         if delayed_image is None:
             return
-        
 
         if (channel in channel_layers) and viewer.layers:
             layer = channel_layers[channel]
@@ -137,12 +137,14 @@ with napari.gui_qt():
                 delayed_image, shape=image.shape, dtype=image.dtype,
             ).reshape((1,) + image.shape)
 
-            channel_layers[channel] = viewer.add_image(image, 
-                                                            name=channel,
-                                                            affine=affine_mat, 
-                                                            rendering="mip",
-                                                            blending="additive",
-                                                            colormap=lut)
+            channel_layers[channel] = viewer.add_image(
+                image,
+                name=channel,
+                affine=affine_mat,
+                rendering="mip",
+                blending="additive",
+                colormap=lut,
+            )
 
         if viewer.dims.point[0] >= channel_layers[channel].data.shape[0] - 2:
             viewer.dims.set_point(0, channel_layers[channel].data.shape[0] - 1)
