@@ -23,6 +23,17 @@ def get_affine(
     dz: float = 0.4,
     already_deskew: bool = False,
 ):
+    """
+    This function returns the affine matrix based on the LLSM configuration.
+
+    Parameters
+    -----------
+    angle: LSSM acqusition in degree, defaults = 31.8.
+    dx: X pixel size, default = 0.104.
+    dy: Y pixel size, default = 0.104.
+    dz: Z step size, default = 0.4.
+    already_deskew: if True this function will not calculate shear, default = False
+    """
     dz_tan = np.tan(np.deg2rad(90 - angle))
     dz_sin = np.sin(np.deg2rad(angle)) * dz
     shear = np.eye(5)
@@ -50,6 +61,7 @@ def get_affine(
     return shear @ scale
 
 
+# Dask array helper function
 def read_one_timepoint(fname_array, block_id):
     # block_id will be something like (t, 0, 0, 0)
     file_num = block_id[0]
@@ -60,6 +72,7 @@ def read_one_timepoint(fname_array, block_id):
     return reshaped_to_chunk_shape
 
 
+# Dask array helper function
 def delayed_multi_imread(fname_array, image_shape, image_dtype):
     nt = fname_array.shape[0]
     nz, ny, nx = image_shape
@@ -78,11 +91,13 @@ worker = None
 
 
 with napari.gui_qt():
+    # main napari loop
     viewer = napari.Viewer(ndisplay=3)
 
     channel_layers = {}
 
     def append(data):
+        # function which appends data sent by serial_directory_watcher to napari
         if not data:
             return
 
@@ -149,6 +164,7 @@ with napari.gui_qt():
         if viewer.dims.point[0] >= channel_layers[channel].data.shape[0] - 2:
             viewer.dims.set_point(0, channel_layers[channel].data.shape[0] - 1)
 
+    # magicgui function which creates the dock widget
     @magicgui(
         dx={"decimals": 4},
         dy={"decimals": 4},
@@ -183,6 +199,7 @@ with napari.gui_qt():
 
     deskew_settings_widget = deskew_settings.Gui()
 
+    # function to start the monitoring
     def start_monitoring(args):
         global worker
         if not worker:

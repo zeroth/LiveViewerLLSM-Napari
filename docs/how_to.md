@@ -21,7 +21,7 @@ pip install -r requirements.txt
 ```
 python main.py
 ```
-Once you have launched the `main.py` script, You will see napari with a new dialog box on the right.
+Once you have launched the `main.py` script, You will see napari with a new dock widget on the right.
 <img
 src="assets/images/napar_with_dialog.png"
 raw=true

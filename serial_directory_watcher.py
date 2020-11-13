@@ -9,11 +9,15 @@ import dask.array as da
 from tifffile import imread
 
 
-def sort_files_by_channels(files, channels):
+def sort_files_by_channels(dir_path, channels: list):
+    """
+    dir_path: the monitoring directory which we want to scan for files
+    channels: identifier list on which we want to divide the files in dir_path
+    """
     file_channels = {}
     for channel in channels:
         _files = sorted(
-            glob(os.path.join(files, "*{0}*".format(channel))), key=alphanumeric_key
+            glob(os.path.join(dir_path, "*{0}*".format(channel))), key=alphanumeric_key
         )
         if len(_files):
             file_channels[channel] = _files
@@ -21,6 +25,7 @@ def sort_files_by_channels(files, channels):
 
 
 def create_init_chunk(init_file_dict, lut_dict, affine_mat):
+    # simple helper function to create the initial chuck we want to display
     init_chunk = {}
     for channel, files in init_file_dict.items():
         init_chunk[channel] = {
@@ -33,6 +38,18 @@ def create_init_chunk(init_file_dict, lut_dict, affine_mat):
 
 @thread_worker
 def watch_dir(kwargs={}):
+    """
+    The thread which monitors the directory for changes
+
+    Parameters
+    ----------
+    kwargs['monitor_dir'] : directory to monitor
+    kwargs["affine"] : affine matrix to associate with each file
+    kwargs["channel_divider"]: list of channel identifies to separate the file on
+    kwargs["delay_between_frames"]: Generally the acquisition delay between two-time points
+    mainly used for determining if the last file in the dir has completely written.
+
+    """
     path = kwargs.get("monitor_dir", "~")
     affine_mat = kwargs.get("affine", None)
     available_channels = kwargs.get("channel_divider", ["488nm", "560nm"])
@@ -73,6 +90,7 @@ def watch_dir(kwargs={}):
 
         if flush_timer:
             # check if the timer has passed the delay_between_frames
+            # if yes then last file has completely written, send it.
             if (time.perf_counter() - flush_timer) > delay_between_frames:
                 for channel in available_channels:
                     if last_file.get(channel, None):
@@ -89,6 +107,9 @@ def watch_dir(kwargs={}):
                             processed_files[channel].update(set(last_file[channel]))
                             last_file[channel] = None
 
+        # Get the currect files from the direct
+        # detemine which we want to process
+        # remove the last one
         if len(current_files):
             for channel in available_channels:
                 if len(current_files.get(channel, [])):
@@ -100,7 +121,7 @@ def watch_dir(kwargs={}):
                         set(current_files[channel]) - set(processed_files[channel])
                     )
 
-        # yield all the files so far process to use it with dask.map_blocks.
+        # yield one file at a time from `files_to_process`
         for channel in available_channels:
             for p in sorted(files_to_process.get(channel, []), key=alphanumeric_key):
                 # update the flush timer
@@ -118,4 +139,5 @@ def watch_dir(kwargs={}):
         else:
             yield {}
 
+        # breathe
         time.sleep(0.1)
