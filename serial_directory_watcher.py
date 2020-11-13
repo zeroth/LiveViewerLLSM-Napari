@@ -52,7 +52,7 @@ def watch_dir(kwargs={}):
     """
     path = kwargs.get("monitor_dir", "~")
     affine_mat = kwargs.get("affine", None)
-    available_channels = kwargs.get("channel_divider", ["488nm", "560nm"])
+    available_channels = kwargs.get("channel_divider", ["*"])
     delay_between_frames = int(kwargs.get("delay_between_frames", 10))
     color_maps = ["bop purple", "bop orange", "bop blue", "green", "blue"]
 
