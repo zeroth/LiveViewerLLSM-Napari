@@ -28,6 +28,6 @@ python main.py
 
 ## Documentation
 
-[Please check doumentation in the docs directory](/docs/how_to.md)
+[Please check how to in docs](/docs/how_to.md)
 
 
