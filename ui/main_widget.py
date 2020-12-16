@@ -78,49 +78,8 @@ class LLSMWidget(QWidget):
         self.start_deskew.emit(data)
 
     @Slot()
-    def create_chart(self):
-        path = self.kwargs.get("monitor_dir", "~")
-        available_channels = self.kwargs.get("channel_divider", ["*"])
-        # channel_lut = {}
-        # for index, channel in enumerate(available_channels):
-        #     channel_lut[channel] = color_maps[index % len(color_maps)]
-
-        processed_files = {}
-
-        if not processed_files:
-            for channel in available_channels:
-                processed_files[channel] = set()
-
-        initial_files = sort_files_by_channels(path, available_channels)
-
-        ## all files
-        for channel, _files in initial_files.items():
-            for _file in _files:
-                _max = np.amax(imread(_file))
-                self.add_to_chart({'channel': channel, 'max': _max})
-        
-        for channel, _series in self.series.items():
-            if _series not in self.chart.series():
-                print("adding series ", channel)
-                self.chart.addSeries(_series)
-
-        # Setting X-axis
-        if not self.axis_x and not self.axis_y:
-            self.axis_x = QtCharts.QValueAxis()
-            # self.axis_x.setTickCount(1)
-            self.axis_x.setTitleText("Time")
-            self.chart.addAxis(self.axis_x, Qt.AlignBottom)
-
-            self.axis_y = QtCharts.QValueAxis()
-            # self.axis_y.setTickCount(1)
-            self.axis_y.setTitleText("Max Intensity")
-            self.chart.addAxis(self.axis_y, Qt.AlignLeft)
-
-            # attach to only one series
-            for _channel, _series in self.series.items():
-                _series.attachAxis(self.axis_x)
-                _series.attachAxis(self.axis_y)
-                break
+    def reset_chart(self):
+        pass
 
     @Slot(dict)
     def update_bleach_chart(self, data):
@@ -133,25 +92,29 @@ class LLSMWidget(QWidget):
         if not is_finish:
             return
         
+        channel = data['channel']
         monito_dir = self.config['monitor_dir']
-        channel_divider_list = [i.strip() for i in self.config['channel_divider'].split(",")]
-        initial_files = sort_files_by_channels(monito_dir, channel_divider_list)
+        # channel_divider_list = [i.strip() for i in self.config['channel_divider'].split(",")]
+        # initial_files = sort_files_by_channels(monito_dir, channel_divider_list)
+        initial_files = sorted(
+            glob(os.path.join(monito_dir, "*{0}*".format(channel))), key=alphanumeric_key
+        )
 
         ## all files
-        for channel, _files in initial_files.items():
-            for _file in _files:
-                _max = np.mean(imread(_file))
-                self.add_to_chart({'channel': channel, 'max': _max})
+        for _file in initial_files:
+            _mean = np.mean(imread(_file))
+            self.add_to_chart({'channel': channel, 'mean': _mean})
 
-        for channel, _series in self.series.items():
-            if _series not in self.chart.series():
-                print("adding series ", channel)
-                self.chart.addSeries(_series)
+        _series = self.series.get(channel, None)
+        # for channel, _series in self.series.items():
+        if _series not in self.chart.series():
+            print("adding series ", channel)
+            self.chart.addSeries(_series)
 
-        for channel, _series in self.series.items():
-            if _series not in self.chart.series():
-                print("adding series ", channel)
-                self.chart.addSeries(_series)
+        # for channel, _series in self.series.items():
+        #     if _series not in self.chart.series():
+        #         print("adding series ", channel)
+        #         self.chart.addSeries(_series)
 
         # Setting X-axis
         if not self.axis_x and not self.axis_y:
@@ -174,13 +137,13 @@ class LLSMWidget(QWidget):
     def add_to_chart(self, data):
         print("add_to_chart", data)
         channel = data['channel']
-        _max = data['max']
+        _mean = data['mean']
         if not self.series.get(channel):
             print("creating series", channel)
             self.series[channel] = QtCharts.QLineSeries()
             self.series[channel].setName(channel)
 
-        self.series[channel].append(self.series[channel].count(), _max)
+        self.series[channel].append(self.series[channel].count(), _mean)
         self.chart.update()
 
         if self.series[channel] in self.chart.series():

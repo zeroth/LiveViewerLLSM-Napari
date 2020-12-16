@@ -70,7 +70,7 @@ def read_one_timepoint(fname_array, block_id):
     
     file_num = block_id[0]
     filename = fname_array[file_num]
-    print("read_one_timepoint: ", filename)
+    # print("read_one_timepoint: ", filename)
     single_timepoint = imread(filename)
     reshaped_to_chunk_shape = single_timepoint[np.newaxis, :, :, :]
     # return the chunk that map_blocks expects

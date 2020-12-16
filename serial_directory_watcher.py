@@ -104,6 +104,12 @@ def watch_dir(kwargs={}):
                             }
                             processed_files[channel].update(set(last_file[channel]))
                             last_file[channel] = None
+                    else :
+                        yield {
+                                "init": False,
+                                "finish": True,
+                                "channel": channel
+                            }
 
         # Get the currect files from the direct
         # detemine which we want to process
