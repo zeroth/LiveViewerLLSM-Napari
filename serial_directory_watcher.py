@@ -4,9 +4,7 @@ import time
 from skimage.io.collection import alphanumeric_key
 from napari.qt import thread_worker
 from glob import glob
-from dask import delayed
 import dask.array as da
-from tifffile import imread
 
 
 def sort_files_by_channels(dir_path, channels: list):
@@ -70,7 +68,6 @@ def watch_dir(kwargs={}):
 
     initial_files = sort_files_by_channels(path, available_channels)
 
-    print()
     if initial_files:
         yield {
             "init": True,
@@ -99,13 +96,20 @@ def watch_dir(kwargs={}):
                             flush_timer = None
                             yield {
                                 "init": False,
-                                "image": delayed(imread)(last_file[channel]),
+                                "image": last_file[channel],
                                 "channel": channel,
                                 "affine": affine_mat,
                                 "lut": channel_lut[channel],
+                                "finish": True
                             }
                             processed_files[channel].update(set(last_file[channel]))
                             last_file[channel] = None
+                    else :
+                        yield {
+                                "init": False,
+                                "finish": True,
+                                "channel": channel
+                            }
 
         # Get the currect files from the direct
         # detemine which we want to process
@@ -128,7 +132,7 @@ def watch_dir(kwargs={}):
                 flush_timer = time.perf_counter()
                 yield {
                     "init": False,
-                    "image": delayed(imread)(p),
+                    "image": p,
                     "channel": channel,
                     "affine": affine_mat,
                     "lut": channel_lut[channel],
@@ -140,4 +144,4 @@ def watch_dir(kwargs={}):
             yield {}
 
         # breathe
-        time.sleep(0.1)
+        time.sleep(delay_between_frames/2)

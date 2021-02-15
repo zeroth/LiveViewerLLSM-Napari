@@ -1,0 +1,34 @@
+{
+    "dx":{
+        "default": 0.104,
+        "dtype" : "float"
+    },
+    "dy":{
+        "default": 0.104,
+        "dtype" : "float"
+    },
+    "dz":{
+        "default": 0.4,
+        "dtype" : "float"
+    },
+    "angle":{
+        "default": 31.8,
+        "dtype" : "float"
+    },
+    "already_deskewed":{
+        "default": false,
+        "dtype" : "bool"
+    },
+    "delay_between_frames":{
+        "default": 10,
+        "dtype" : "int"
+    },
+    "channel_divider":{
+        "default": "488nm, 560nm",
+        "dtype" : "str"
+    },
+    "monitor_dir":{
+        "default": "~",
+        "dtype" : "dir"
+    }
+}
